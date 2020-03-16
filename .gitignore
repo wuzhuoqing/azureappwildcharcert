@@ -5,6 +5,13 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+#lego binary file. To download from https://github.com/go-acme/lego/releases directly
+lego
+.lego/
+
+#local debug env file
+debug_env.txt
+
 # Runtime data
 pids
 *.pid
