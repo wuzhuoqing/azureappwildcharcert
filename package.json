@@ -13,8 +13,10 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@azure/arm-appservice": "^5.8.0",
     "@azure/identity": "^1.0.2",
     "@azure/keyvault-certificates": "^4.0.0",
-    "@azure/keyvault-secrets": "^4.0.2"
+    "@azure/keyvault-secrets": "^4.0.2",
+    "@azure/ms-rest-nodeauth": "^3.0.3"
   }
 }
