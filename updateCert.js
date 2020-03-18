@@ -62,7 +62,7 @@ async function getNewPemCert(domainName) {
 
 async function getPfxCert(zoneApiToken, dnsApiToken, domainName) {
     let pemPath = path.resolve(__dirname, '.lego', 'certificates', '_.' + domainName + '.pem');
-    if (domainName && false) {
+    if (domainName) {
         let legoRes = await getNewPemCert(zoneApiToken, dnsApiToken, domainName);
         pemPath = legoRes.legoPemPath;
     }
@@ -155,16 +155,6 @@ function canUseWildCharCert(name, domainName) {
 }
 
 async function tryRenewCertForSite(domainName) {
-    let credentials = new identity.ChainedTokenCredential(new identity.DefaultAzureCredential());
-    const secretClient = new KeyVaultSecret.SecretClient(KEY_VAULT_URL, credentials);
-    const certClient = new CertificateClient(KEY_VAULT_URL, credentials);
-
-    const configEntrySecret = await secretClient.getSecret(CONFIG_INDEX);
-    console.info(`CONFIG_INDEX value is: ${configEntrySecret.value}.`);
-    const configEntry = configEntrySecret.value.split(',');
-    const zoneApiToken = (await secretClient.getSecret(configEntry[0])).value;
-    const dnsApiToken = (await secretClient.getSecret(configEntry[1])).value;
-
     const siteCert = await getWebSiteAndCerts(domainName);
     const targetSite = siteCert.targetSite;
     const targetCertList = siteCert.certList.filter(c => c.hostNames.some(hn => hn.toLowerCase() === '*.' + domainName.toLowerCase())).sort((a, b) => b.expirationDate.getTime() - a.expirationDate.getTime());
@@ -183,6 +173,16 @@ async function tryRenewCertForSite(domainName) {
 
     // renew if needed
     if (needRenew || FORCE_RENEW === 'true') {
+        let credentials = new identity.ChainedTokenCredential(new identity.DefaultAzureCredential(), new identity.ManagedIdentityCredential());
+        const secretClient = new KeyVaultSecret.SecretClient(KEY_VAULT_URL, credentials);
+        const certClient = new CertificateClient(KEY_VAULT_URL, credentials);
+    
+        const configEntrySecret = await secretClient.getSecret(CONFIG_INDEX);
+        console.info(`CONFIG_INDEX value is: ${configEntrySecret.value}.`);
+        const configEntry = configEntrySecret.value.split(',');
+        const zoneApiToken = (await secretClient.getSecret(configEntry[0])).value;
+        const dnsApiToken = (await secretClient.getSecret(configEntry[1])).value;
+
         const pfxInfo = await getPfxCert(zoneApiToken, dnsApiToken, domainName);
         const uploadRes = await uploadCertToSite(domainName, targetSite.location, pfxInfo.certBytes, pfxInfo.pfxPW);
         targetThumbprint = uploadRes.thumbprint;
