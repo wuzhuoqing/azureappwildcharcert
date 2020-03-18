@@ -1,10 +1,39 @@
 # Introduction 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project. 
+Docker image to be run in Azure container instance service and obtain/update let's encrypt wild char cert for azure web site.
 
 # Getting Started
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
+
 1.	Installation process
+  Create azure container instance with docker hub image wuzhuoqing/azurecert:azurewildcharcert
+  
+  Grant azure container instance managed identify access to keyvault to get secret and import cert.
+  
+  Grant azure container instance managed identify access to add cert and bind ssl to app service (May need ResourceGroup contributor to add cert)
+  
+  Assign azure container instance below Environment variables
+
+#Keyvault used to save secret and cert
+`KEY_VAULT_URL=https://yourvault.vault.azure.net/`
+
+`CONFIG_INDEX=EntryToGet` The secret entry in keyvault to get other configs. comma separated. `CF-ZONE-API-TOKEN,CF-DNS-API-TOKEN,WEB-CERT` means `CF-ZONE-API-TOKEN` secret entry store cloudflare dns zone api token, `CF-DNS-API-TOKEN` for dns api token, and `WEB-CERT` is the cert entry to update in keyvault.
+
+`DOMAIN_NAME=domain name to get wild char` lower case like `example.com`
+
+`EMAIL_NAME=email used for let's entrypt cert account and possible also the cloudflare account email`
+
+`AZURE_SUBSCRIPTION_ID=GUID_OF_SUBSCRIPTION`
+
+`SITE_RESOURCE_GROUP=WebSiteResourceGroup`
+
+For local debugging or to use azure app instead of managed identity
+`AZURE_CLIENT_ID=`
+
+`AZURE_TENANT_ID=`
+
+`AZURE_CLIENT_SECRET=`
+
 2.	Software dependencies
+
 3.	Latest releases
 4.	API references
 
