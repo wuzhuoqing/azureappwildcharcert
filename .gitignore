@@ -11,6 +11,7 @@ lego
 
 #local debug env file
 debug_env.txt
+az_container_actual.yaml
 
 # Runtime data
 pids

@@ -1,0 +1,49 @@
+name: wildchar-cert-web
+apiVersion: '2018-10-01'
+location: westus
+tags: {}
+type: Microsoft.ContainerInstance/containerGroups
+properties: # Properties of container group
+  containers:
+  - name: wildchar-cert
+    properties:
+      image: wuzhuoqing/azurecert:azurewildcharcert
+      ports: []
+      command:
+        - sleep
+        - infinity
+      environmentVariables:
+      - name: KEY_VAULT_URL
+        secureValue: null
+        value: <https://YourVault.vault.azure.net/>
+      - name: CONFIG_INDEX
+        secureValue: null
+        value: <YourCertConfigIndex>
+      - name: DOMAIN_NAME
+        secureValue: null
+        value: <example.com>
+      - name: EMAIL_NAME
+        secureValue: null
+        value: <your_email>
+      - name: AZURE_SUBSCRIPTION_ID
+        secureValue: null
+        value: <your_sub_id>
+      - name: SITE_RESOURCE_GROUP
+        secureValue: null
+        value: <your_site_rg>
+      resources:
+        requests:
+          cpu: 1.0
+          gpu: null
+          memoryInGB: 1.0
+      volumeMounts:
+        - mountPath: /usr/src/app/.lego/accounts/
+          name: legosharevolume
+  osType: Linux
+  restartPolicy: Never
+  volumes:
+  - name: legosharevolume
+    azureFile:
+      sharename: <your_share_name>
+      storageAccountName: <storageAccountName>
+      storageAccountKey: <storageAccountKey>

@@ -54,7 +54,7 @@ async function uploadCertToSite(domainName, location, pfxBlob, pfxPW) {
     return updateRes;
 }
 
-async function getNewPemCert(domainName) {
+async function getNewPemCert(zoneApiToken, dnsApiToken, domainName) {
     let legoCode = await runLegoClient(zoneApiToken, dnsApiToken, domainName);
     console.log('lego return :', legoCode);
     return legoCode;
@@ -164,6 +164,7 @@ async function tryRenewCertForSite(domainName) {
         targetThumbprint = targetCertList[0].thumbprint;
         const expireTime = targetCertList[0].expirationDate.getTime();
         const renewTime = new Date().getTime() + 86400 * 1000 * 35;
+        console.log(`latest cert expiring at ${expireTime} V.S. renewThreshold ${renewTime}`);
         if (expireTime < renewTime) {
             needRenew = true;
         }
@@ -178,14 +179,17 @@ async function tryRenewCertForSite(domainName) {
         const certClient = new CertificateClient(KEY_VAULT_URL, credentials);
     
         const configEntrySecret = await secretClient.getSecret(CONFIG_INDEX);
-        console.info(`CONFIG_INDEX value is: ${configEntrySecret.value}.`);
+        console.log(`CONFIG_INDEX value is: ${configEntrySecret.value}.`);
         const configEntry = configEntrySecret.value.split(',');
         const zoneApiToken = (await secretClient.getSecret(configEntry[0])).value;
         const dnsApiToken = (await secretClient.getSecret(configEntry[1])).value;
 
+        console.log(`getting cert from lets encrypt`);
         const pfxInfo = await getPfxCert(zoneApiToken, dnsApiToken, domainName);
+        console.log(`uploading cert to website`);
         const uploadRes = await uploadCertToSite(domainName, targetSite.location, pfxInfo.certBytes, pfxInfo.pfxPW);
         targetThumbprint = uploadRes.thumbprint;
+        console.log(`new cert uploaded with thumbprint ${targetThumbprint}`);
         // save a copy to keyvault just in case
         await certClient.importCertificate(configEntry[2], pfxInfo.certBytes, {
             password: pfxInfo.pfxPW,
@@ -195,17 +199,26 @@ async function tryRenewCertForSite(domainName) {
                 reuseKey: false
             }
         });
+        console.log(`new cert saved to keyvault under ${configEntry[2]}`);
+    } else {
+        console.log(`not renew uploaded certs`);
     }
 
     const siteClient = await getWebSiteClient();
     for (let i = 0; i < targetSite.hostNameSslStates.length; i++) {
         let sslState = targetSite.hostNameSslStates[i];
+        console.log(`checking ${sslState.name}`);
         if (canUseWildCharCert(sslState.name, domainName)) {
+            console.log(`${sslState.name} can use cert for ${domainName}`);
             if (sslState.thumbprint !== targetThumbprint) {
+                console.log(`updating ${sslState.name} cert thumbprint ${sslState.thumbprint} to use cert thumbprint ${targetThumbprint}`);
                 sslState.thumbprint = targetThumbprint;
                 sslState.toUpdate = true;
                 sslState.sslState = 'SniEnabled';
                 const sslRes = await siteClient.webApps.createOrUpdateHostNameBinding(targetSite.resourceGroup, targetSite.name, sslState.name, sslState);
+                console.log(`${sslState.name} updated with ${sslRes.sslState}`);
+            } else {
+                console.log(`${sslState.name} already use cert ${targetThumbprint}`);
             }
         }
     }
@@ -214,13 +227,16 @@ async function tryRenewCertForSite(domainName) {
     for (let i = 1; i < targetCertList.length; i++) {
         const expireTime = targetCertList[i].expirationDate.getTime();
         const removeTime = new Date().getTime();
+        console.log(`${targetCertList[i].name} expireTime ${expireTime} V.S. removeTime ${removeTime}`);
         if (expireTime < removeTime) {
             await siteClient.certificates.deleteMethod(targetSite.resourceGroup, targetCertList[i].name);
+            console.log(`${targetCertList[i].name} expireTime ${expireTime} removed`);
         }
     }
 }
 
 try {
+    console.log('begin to refreshing', DOMAIN_NAME);
     tryRenewCertForSite(DOMAIN_NAME);
 }
 catch (err) {
