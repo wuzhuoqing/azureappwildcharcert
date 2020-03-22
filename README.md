@@ -4,6 +4,7 @@ Docker image to be run in Azure container instance service and obtain/update let
 # Getting Started
 
 1.	Installation process
+
   Create azure container instance with docker hub image wuzhuoqing/azurecert:azurewildcharcert
   
   Grant azure container instance managed identify access to keyvault to get secret and import cert.
