@@ -10,8 +10,8 @@ properties: # Properties of container group
       image: wuzhuoqing/azurecert:azurewildcharcert
       ports: []
       command:
-        - sleep
-        - infinity
+        - node
+        - updateCert.js
       environmentVariables:
       - name: KEY_VAULT_URL
         secureValue: null
