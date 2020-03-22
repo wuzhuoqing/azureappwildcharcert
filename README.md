@@ -11,7 +11,7 @@ Docker image to be run in Azure container instance service and obtain/update let
   
   Grant azure container instance managed identify access to add cert and bind ssl to app service (May need ResourceGroup contributor role level to add cert)
   
-  Assign azure container instance below Environment variables (ref to [az_container.yaml](https://github.com/wuzhuoqing/azureappwildcharcert/blob/master/az_container.yaml) for details)
+  Assign azure container instance below Environment variables and (maybe optionally) attach azure fileshare to /usr/src/app/.lego/accounts/ (ref to [az_container.yaml](https://github.com/wuzhuoqing/azureappwildcharcert/blob/master/az_container.yaml) for details)
 
 * `KEY_VAULT_URL=https://yourvault.vault.azure.net/` Keyvault used to save secret and cert
 
