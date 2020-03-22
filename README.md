@@ -5,11 +5,11 @@ Docker image to be run in Azure container instance service and obtain/update let
 
 1.	Installation process
 
-  Create azure container instance with docker hub image wuzhuoqing/azurecert:azurewildcharcert
+  Create azure container instance with docker hub image `wuzhuoqing/azurecert:azurewildcharcert`
   
   Grant azure container instance managed identify access to keyvault to get secret and import cert.
   
-  Grant azure container instance managed identify access to add cert and bind ssl to app service (May need ResourceGroup contributor to add cert)
+  Grant azure container instance managed identify access to add cert and bind ssl to app service (May need ResourceGroup contributor role level to add cert)
   
   Assign azure container instance below Environment variables (ref to [az_container.yaml](https://github.com/wuzhuoqing/azureappwildcharcert/blob/master/az_container.yaml) for details)
 
@@ -26,7 +26,10 @@ Docker image to be run in Azure container instance service and obtain/update let
 
 `SITE_RESOURCE_GROUP=WebSiteResourceGroup`
 
-For local debugging or to use azure app instead of managed identity those extra secure env value can be added. The azure app need to have permission to read secret and import/update cert in keyvault.
+After the container instance is created. Create an azure function to start it say every 3 days. Can use [AzureContainerTimerTrigger](https://github.com/wuzhuoqing/AzureContainerTimerTrigger)
+
+For local debugging or to use azure app service-principal instead of managed identity those extra secure env value can be added. The azure app need to have permission to read secret and import/update cert in keyvault.
+
 `AZURE_CLIENT_ID=`
 
 `AZURE_TENANT_ID=`
