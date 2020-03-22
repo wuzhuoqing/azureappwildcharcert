@@ -13,28 +13,30 @@ Docker image to be run in Azure container instance service and obtain/update let
   
   Assign azure container instance below Environment variables (ref to [az_container.yaml](https://github.com/wuzhuoqing/azureappwildcharcert/blob/master/az_container.yaml) for details)
 
-#Keyvault used to save secret and cert
-`KEY_VAULT_URL=https://yourvault.vault.azure.net/`
+* `KEY_VAULT_URL=https://yourvault.vault.azure.net/` Keyvault used to save secret and cert
 
-`CONFIG_INDEX=EntryToGet` The secret entry in keyvault to get other configs. comma separated. For example, the value can be `CF-ZONE-API-TOKEN,CF-DNS-API-TOKEN,WEB-CERT` which means `CF-ZONE-API-TOKEN` secret entry store cloudflare dns zone api token, `CF-DNS-API-TOKEN` for dns api token, and `WEB-CERT` is the cert entry to update in keyvault.
+* `CONFIG_INDEX=EntryToGet` The secret entry in keyvault to get other configs. comma separated. For example, the value can be `CF-ZONE-API-TOKEN,CF-DNS-API-TOKEN,WEB-CERT` which means 
+  * `CF-ZONE-API-TOKEN` secret entry store cloudflare dns zone api token .
+  * `CF-DNS-API-TOKEN` for dns api token.
+  * `WEB-CERT` is the cert entry to update in keyvault.
 
-`DOMAIN_NAME=domain name to get wild char` lower case like `example.com`
+* `DOMAIN_NAME=domain name to get wild char` lower case like `example.com`
 
-`EMAIL_NAME=email used for let's entrypt cert account and possible also the cloudflare account email`
+* `EMAIL_NAME=email` used for let's entrypt cert account and possible also the cloudflare account email`
 
-`AZURE_SUBSCRIPTION_ID=GUID_OF_SUBSCRIPTION`
+* `AZURE_SUBSCRIPTION_ID=GUID_OF_SUBSCRIPTION`
 
-`SITE_RESOURCE_GROUP=WebSiteResourceGroup`
+* `SITE_RESOURCE_GROUP=WebSiteResourceGroup`
 
 After the container instance is created. Create an azure function to start it say every 3 days. Can use [AzureContainerTimerTrigger](https://github.com/wuzhuoqing/AzureContainerTimerTrigger)
 
 For local debugging or to use azure app service-principal instead of managed identity those extra secure env value can be added. The azure app need to have permission to read secret and import/update cert in keyvault.
 
-`AZURE_CLIENT_ID=`
+* `AZURE_CLIENT_ID=`
 
-`AZURE_TENANT_ID=`
+* `AZURE_TENANT_ID=`
 
-`AZURE_CLIENT_SECRET=`
+* `AZURE_CLIENT_SECRET=`
 
 2.	Software dependencies
 
