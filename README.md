@@ -5,17 +5,17 @@ Docker image to be run in Azure container instance service and obtain/update let
 
 1.	Installation process
 
-  Create azure container instance with docker hub image `wuzhuoqing/azurecert:azurewildcharcert`
+  Create azure container instance with docker hub image `wuzhuoqing/azurecert:azurewildcharcert`. (`az container create --resource-group myResourceGroup --file az_container.yaml` check [az_container.yaml](https://github.com/wuzhuoqing/azureappwildcharcert/blob/master/az_container.yaml) for details)
   
   Grant azure container instance managed identify access to keyvault to get secret and import cert.
   
-  Grant azure container instance managed identify access to add cert and bind ssl to app service (May need ResourceGroup contributor role level to add cert)
+  Grant azure container instance managed identify access to add cert and bind ssl to app service (May need ResourceGroup contributor role to add cert)
   
-  Assign azure container instance below Environment variables and (maybe optionally) attach azure fileshare to /usr/src/app/.lego/accounts/ (ref to [az_container.yaml](https://github.com/wuzhuoqing/azureappwildcharcert/blob/master/az_container.yaml) for details)
+  Assign azure container instance below Environment variables and (maybe optionally) create an azure fileshare and attach to /usr/src/app/.lego/accounts/ (ref to [az_container.yaml](https://github.com/wuzhuoqing/azureappwildcharcert/blob/master/az_container.yaml) for details)
 
 * `KEY_VAULT_URL=https://yourvault.vault.azure.net/` Keyvault used to save secret and cert
 
-* `CONFIG_INDEX=EntryToGet` The secret entry in keyvault to get other configs. comma separated. For example, the value can be `CF-ZONE-API-TOKEN,CF-DNS-API-TOKEN,WEB-CERT` which means 
+* `CONFIG_INDEX=EntryToGet` The secret entry in keyvault to get other configs. comma separated. For now 3 entries are needed. For example, the value can be `CF-ZONE-API-TOKEN,CF-DNS-API-TOKEN,WEB-CERT` which means 
   * `CF-ZONE-API-TOKEN` secret entry store cloudflare dns zone api token .
   * `CF-DNS-API-TOKEN` for dns api token.
   * `WEB-CERT` is the cert entry to update in keyvault.
@@ -28,7 +28,7 @@ Docker image to be run in Azure container instance service and obtain/update let
 
 * `SITE_RESOURCE_GROUP=WebSiteResourceGroup`
 
-After the container instance is created. Create an azure function to start it say every 3 days. Can use [AzureContainerTimerTrigger](https://github.com/wuzhuoqing/AzureContainerTimerTrigger) azure function managed identify need to have permission to the container instance. Due to an [issue](https://github.com/Azure/ms-rest-nodeauth/issues/86) only system assigned identify is supported for now.
+After the container instance is created. Create an azure function to start it say every 3 days. Can use [AzureContainerTimerTrigger](https://github.com/wuzhuoqing/AzureContainerTimerTrigger). Azure function managed identify need to have permission to the container instance. Due to an [issue](https://github.com/Azure/ms-rest-nodeauth/issues/86) only system assigned identify is supported for now. Azure function [timer trigger may not be reliable](https://github.com/Azure/azure-functions-host/issues/5836) so we may create another azure function with http trigger and use some 3rd party scheduler to trigger it.
 
 For local debugging or to use azure app service-principal instead of managed identity those extra secure env value can be added. The azure app need to have permission to read secret and import/update cert in keyvault.
 
