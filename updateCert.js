@@ -273,6 +273,7 @@ async function tryRenewCertForSite(domainName) {
         console.log(`not renew uploaded certs`);
     }
 
+    console.log(`checking if site cert need update`);
     const siteClient = await getWebSiteClient();
     for (let i = 0; i < targetSite.hostNameSslStates.length; i++) {
         let sslState = targetSite.hostNameSslStates[i];
@@ -293,6 +294,7 @@ async function tryRenewCertForSite(domainName) {
     }
 
     // clean up expired certs
+    console.log(`clean up expired certs`);
     for (let i = 1; i < targetCertList.length; i++) {
         const expireTime = targetCertList[i].expirationDate.getTime();
         const removeTime = new Date().getTime();
@@ -302,6 +304,7 @@ async function tryRenewCertForSite(domainName) {
             console.log(`${targetCertList[i].name} expireTime ${expireTime} removed`);
         }
     }
+    console.log(`all done`);
 }
 
 try {
