@@ -22,7 +22,9 @@ Docker image to be run in Azure container instance service and obtain/update let
 
 * `DOMAIN_NAME=domain name to get wild char` lower case like `example.com`
 
-* `EMAIL_NAME=email` used for let's entrypt cert account and possible also the cloudflare account email`
+* `EMAIL_NAME=email` used for let's entrypt cert account and possible also the cloudflare account email.
+
+* `DNS_PROVIDER=Godaddy` use Godaddy as DNS_PROVIDER. Else will use CloudFlare.
 
 * `AZURE_SUBSCRIPTION_ID=GUID_OF_SUBSCRIPTION`
 

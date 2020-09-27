@@ -14,6 +14,7 @@ const CONFIG_INDEX = process.env['CONFIG_INDEX'];
 const FORCE_RENEW = process.env['FORCE_RENEW'];
 const DOMAIN_NAME = process.env['DOMAIN_NAME'];
 const EMAIL_NAME = process.env['EMAIL_NAME'];
+const DNS_PROVIDER = process.env['DNS_PROVIDER'];
 
 const AZURE_CLIENT_ID = process.env['AZURE_CLIENT_ID'];
 const AZURE_TENANT_ID = process.env['AZURE_TENANT_ID'];
@@ -38,6 +39,7 @@ async function getWebSiteAndCerts(domainName) {
     if (!targetSite) {
         console.error('cannot find site with hostName', DOMAIN_NAME);
         throw 'cannot find site ' + DOMAIN_NAME;
+        // targetSite = appList.find(s => true);
     }
     const certList = await siteClient.certificates.listByResourceGroup(SITE_RESOURCE_GROUP);
     return { targetSite, certList };
@@ -54,16 +56,33 @@ async function uploadCertToSite(domainName, location, pfxBlob, pfxPW) {
     return updateRes;
 }
 
-async function getNewPemCert(zoneApiToken, dnsApiToken, domainName) {
-    let legoCode = await runLegoClient(zoneApiToken, dnsApiToken, domainName);
+async function getNewPemCertCloudFlare(zoneApiToken, dnsApiToken, domainName) {
+    let legoCode = await runLegoCloudFlareClient(zoneApiToken, dnsApiToken, domainName);
     console.log('lego return :', legoCode);
     return legoCode;
 }
 
-async function getPfxCert(zoneApiToken, dnsApiToken, domainName) {
+async function getNewPemCertGodaddy(dnsApiKey, dnsApiSec, domainName) {
+    let legoCode = await runLegoGodaddyClient(dnsApiKey, dnsApiSec, domainName);
+    console.log('lego return :', legoCode);
+    return legoCode;
+}
+
+async function getNewPemCert(configEntryZero, configEntryOne, domainName) {
+    if (DNS_PROVIDER === 'Godaddy') {
+        let legoRes = await getNewPemCertGodaddy(configEntryZero, configEntryOne, domainName);
+        return legoRes;
+    } else {
+        let legoRes = await getNewPemCertCloudFlare(configEntryZero, configEntryOne, domainName);
+        return legoRes;
+    }
+}
+
+// config pass configEntry as array or something
+async function getPfxCert(configEntryZero, configEntryOne, domainName) {
     let pemPath = path.resolve(__dirname, '.lego', 'certificates', '_.' + domainName + '.pem');
     if (domainName) {
-        let legoRes = await getNewPemCert(zoneApiToken, dnsApiToken, domainName);
+        let legoRes = await getNewPemCert(configEntryZero, configEntryOne, domainName);
         pemPath = legoRes.legoPemPath;
     }
 
@@ -102,7 +121,7 @@ async function getPfxCert(zoneApiToken, dnsApiToken, domainName) {
     return { certBytes, pfxPW };
 }
 
-function runLegoClient(zoneApiToken, dnsApiToken, domainName) {
+function runLegoCloudFlareClient(zoneApiToken, dnsApiToken, domainName) {
     let legoExe = path.resolve(__dirname, 'lego');
     let legoDataPath = path.resolve(__dirname, '.lego');
     let legoPemPath = path.resolve(legoDataPath, 'certificates', '_.' + domainName + '.pem');
@@ -127,6 +146,54 @@ function runLegoClient(zoneApiToken, dnsApiToken, domainName) {
         env: {
             CF_ZONE_API_TOKEN: zoneApiToken,
             CF_DNS_API_TOKEN: dnsApiToken
+        }
+    });
+
+    legoProc.stderr.on('data', (data) => {
+        console.error(`lego stderr: ${data}`);
+    });
+
+    legoProc.stdout.on('data', (data) => {
+        console.log(`lego stdout: ${data}`);
+    });
+
+    legoProc.on('error', (err) => {
+        console.error('Failed to start lego process.', err);
+    });
+
+    return new Promise((resolve, reject) => {
+        legoProc.on('close', (code) => {
+            console.log(`lego process exited with code ${code}`);
+            resolve({ code, legoPemPath });
+        });
+    });
+}
+
+function runLegoGodaddyClient(dnsApiKey, dnsApiSec, domainName) {
+    let legoExe = path.resolve(__dirname, 'lego');
+    let legoDataPath = path.resolve(__dirname, '.lego');
+    let legoPemPath = path.resolve(legoDataPath, 'certificates', '_.' + domainName + '.pem');
+    let legoProc = child_process.spawn(legoExe, [
+        // '--server=https://acme-staging-v02.api.letsencrypt.org/directory',
+        '-a',
+        '--pem',
+        '-k',
+        'rsa2048',
+        '--path',
+        legoDataPath,
+        '-d',
+        '*.' + domainName,
+        '-d',
+        domainName,
+        '--dns',
+        'godaddy',
+        '--email',
+        EMAIL_NAME,
+        'run'
+    ], {
+        env: {
+            GODADDY_API_KEY: dnsApiKey,
+            GODADDY_API_SECRET: dnsApiSec
         }
     });
 
@@ -181,11 +248,13 @@ async function tryRenewCertForSite(domainName) {
         const configEntrySecret = await secretClient.getSecret(CONFIG_INDEX);
         console.log(`CONFIG_INDEX value is: ${configEntrySecret.value}.`);
         const configEntry = configEntrySecret.value.split(',');
-        const zoneApiToken = (await secretClient.getSecret(configEntry[0])).value;
-        const dnsApiToken = (await secretClient.getSecret(configEntry[1])).value;
+
+        // should 
+        const configEntry0 = (await secretClient.getSecret(configEntry[0])).value;
+        const configEntry1 = (await secretClient.getSecret(configEntry[1])).value;
 
         console.log(`getting cert from lets encrypt`);
-        const pfxInfo = await getPfxCert(zoneApiToken, dnsApiToken, domainName);
+        const pfxInfo = await getPfxCert(configEntry0, configEntry1, domainName);
         console.log(`uploading cert to website`);
         const uploadRes = await uploadCertToSite(domainName, targetSite.location, pfxInfo.certBytes, pfxInfo.pfxPW);
         targetThumbprint = uploadRes.thumbprint;
