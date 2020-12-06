@@ -304,7 +304,57 @@ async function tryRenewCertForSite(domainName) {
             console.log(`${targetCertList[i].name} expireTime ${expireTime} removed`);
         }
     }
+
+    // clean up old certs
+    let siteName2thumbprintDict = {};
+    for (let i = 0; i < targetSite.hostNameSslStates.length; i++) {
+        let sslState = targetSite.hostNameSslStates[i];
+        console.log(`checking ${sslState.name}`);
+        if (sslState && sslState.thumbprint && sslState.name) {
+            siteName2thumbprintDict[sslState.name] = sslState.thumbprint;
+        }
+    }
+    let cert2ExpirationDict = {};
+    siteCert.certList.forEach((cert) => {
+        if (cert.hostNames && cert.hostNames.length && cert.thumbprint && cert.expirationDate) {
+            let hostSorted = getCertNamesKey(cert.hostNames);
+            if (!cert2ExpirationDict[hostSorted] || cert2ExpirationDict[hostSorted] < cert.expirationDate.getTime()) {
+                cert2ExpirationDict[hostSorted] = cert.expirationDate.getTime();
+            }
+        }
+    });
+
+    for (let i = 0; i < siteCert.certList.length; i ++) {
+        let cert = siteCert.certList[i];
+        if (cert.hostNames && cert.hostNames.length && cert.thumbprint && cert.expirationDate) {
+            let hostSorted = getCertNamesKey(cert.hostNames);
+            if (cert.expirationDate.getTime() < cert2ExpirationDict[hostSorted]) {
+                console.log(`old cert ${hostSorted} ${cert.expirationDate} ${cert.thumbprint} can be removed as there is newer cert`);
+                let notInUse = true;
+                cert.hostNames.forEach((hostName) => {
+                    if (siteName2thumbprintDict[hostName] && siteName2thumbprintDict[hostName] === cert.thumbprint) {
+                        notInUse = false;
+                    }
+                });
+                if (notInUse) {
+                    console.log(`removing old cert ${hostSorted} ${cert.expirationDate} ${cert.thumbprint}`);
+                    try {
+                        await siteClient.certificates.deleteMethod(targetSite.resourceGroup, cert.name);
+                    }
+                    catch (err) {
+                        console.error(`failed to remove old cert ${hostSorted} ${cert.expirationDate} ${cert.thumbprint}`, err);
+                    }
+                } else {
+                    console.log(`old cert ${hostSorted} ${cert.thumbprint} still in use`);
+                }
+            }
+        }
+    };
     console.log(`all done`);
+}
+
+function getCertNamesKey(hostNames) {
+    return hostNames.sort().join(',');
 }
 
 try {
