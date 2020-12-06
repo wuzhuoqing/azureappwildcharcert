@@ -306,10 +306,11 @@ async function tryRenewCertForSite(domainName) {
     }
 
     // clean up old certs
+    console.log(`clean up old certs`);
     let siteName2thumbprintDict = {};
     for (let i = 0; i < targetSite.hostNameSslStates.length; i++) {
         let sslState = targetSite.hostNameSslStates[i];
-        console.log(`checking ${sslState.name}`);
+        // console.log(`checking ${sslState.name}`);
         if (sslState && sslState.thumbprint && sslState.name) {
             siteName2thumbprintDict[sslState.name] = sslState.thumbprint;
         }
